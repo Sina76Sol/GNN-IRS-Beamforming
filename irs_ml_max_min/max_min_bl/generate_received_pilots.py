@@ -1,7 +1,7 @@
-from max_min_bl.generate_channel import generate_channel, channel_complex2real
+from irs_ml_max_min.max_min_bl.generate_channel import generate_channel, channel_complex2real
 import numpy as np
 from scipy.linalg import dft
-from util_func import combine_channel, batch_combine_channel, ls_estimator, lmmse_estimator
+from irs_ml_max_min.util_func import combine_channel, batch_combine_channel, ls_estimator, lmmse_estimator
 import matplotlib.pyplot as plt
 
 
@@ -130,7 +130,7 @@ def compute_stat_info(params_system, noise_power_db, location_user, Rician_facto
     len_pilot = num_user * 1
     len_frame = num_user
     phase_shifts, pilots = generate_pilots_bl(len_pilot, num_elements_irs, num_user)
-    channels, set_location_user = generate_channel(params_system,location_user_initial=location_user,
+    channels, set_location_user = generate_channel(params_system, location_user_initial=location_user,
                                                    Rician_factor=Rician_factor, num_samples=num_samples)
     (channel_bs_user, channel_irs_user, channel_bs_irs) = channels
     _, _, channel_bs_irs_user = channel_complex2real(channels)
@@ -208,14 +208,17 @@ def test_channel_estimation_lmmse(params_system, len_pilot, noise_power_db, loca
     stat_info = compute_stat_info(params_system, noise_power_db, location_user, Rician_factor)
 
     # ===channel estimation===
-    channel_bs_user_est, channel_bs_irs_user_est = channel_estimation_lmmse(params_system, y, pilots, phase_shifts,stat_info)
+    channel_bs_user_est, channel_bs_irs_user_est = channel_estimation_lmmse(params_system, y, pilots, phase_shifts,
+                                                                            stat_info)
 
-    #---MSE---
+    # ---MSE---
     # err_bs_user = np.linalg.norm(channel_bs_user_est - channel_bs_user, axis=(1))**2
     # err_bs_irs_user = np.linalg.norm(channel_bs_irs_user_est - channel_bs_irs_user, axis=(1, 2))**2
-    #---NMSE---
-    err_bs_user = np.linalg.norm(channel_bs_user_est - channel_bs_user, axis=(1))**2/np.linalg.norm(channel_bs_user, axis=(1))**2
-    err_bs_irs_user = np.linalg.norm(channel_bs_irs_user_est - channel_bs_irs_user, axis=(1, 2))**2/np.linalg.norm(channel_bs_irs_user, axis=(1,2))**2
+    # ---NMSE---
+    err_bs_user = np.linalg.norm(channel_bs_user_est - channel_bs_user, axis=(1)) ** 2 / np.linalg.norm(channel_bs_user,
+                                                                                                        axis=(1)) ** 2
+    err_bs_irs_user = np.linalg.norm(channel_bs_irs_user_est - channel_bs_irs_user, axis=(1, 2)) ** 2 / np.linalg.norm(
+        channel_bs_irs_user, axis=(1, 2)) ** 2
 
     # print('Direct link estimation error (num_sample, num_user):\n', err_bs_user)
     # print('Cascaded link estimation error (num_sample, num_user):\n', err_bs_irs_user)
@@ -227,25 +230,26 @@ def main():
     params_system = (num_antenna_bs, num_elements_irs, num_user)
     noise_power_db, Rician_factor = -100, 5
     location_user = None
-    set_len_pilot = np.array([1,5,15,25,35,55,75,95,105])*num_user
+    set_len_pilot = np.array([1, 5, 15, 25, 35, 55, 75, 95, 105]) * num_user
     err_lmmse = []
 
     for len_pilot in set_len_pilot:
-        err3, err4 = test_channel_estimation_lmmse(params_system, len_pilot, noise_power_db, location_user, Rician_factor,
-                                                   num_sample)
+        err3, err4 = test_channel_estimation_lmmse(params_system, len_pilot, noise_power_db, location_user,
+                                                   Rician_factor, num_sample)
         # print('ls estimation:', err1, err2)
         print('lmmse estimation:', err3, err4)
-        err_lmmse.append(err3+err4)
+        err_lmmse.append(err3 + err4)
     print(err_lmmse)
 
-    #----------
+    # ----------
     plt.figure()
     plt.title('Error')
-    plt.plot(set_len_pilot,err_lmmse,'s-',label='lmmse')
+    plt.plot(set_len_pilot, err_lmmse, 's-', label='lmmse')
     plt.xlabel('Pilot length')
     plt.ylabel('MSE')
     plt.grid()
     plt.show()
+
 
 if __name__ == '__main__':
     main()

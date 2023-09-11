@@ -2,8 +2,8 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import cvxpy as cp
-from max_min_bl.generate_channel import  channel_complex2real
-from compute_objective_fun import compute_rate_batch,compute_minrate_batch
+from generate_channel import channel_complex2real
+from irs_ml_max_min.compute_objective_fun import compute_rate_batch, compute_minrate_batch
 import scipy.io as sio
 import os
 
@@ -176,7 +176,7 @@ def find_theta(g, p, H0, hd, sigma2, eps1=1e-4):
         n_over_d_min = cp.min(cp.vstack(n_over_d))
         prob = cp.Problem(cp.Minimize(-cp.min(cp.vstack(n_d))),
                           constraints)
-        prob.solve(solver=cp.MOSEK, verbose=False)
+        prob.solve(solver=cp.CVXOPT, verbose=False)
         # prob.solve(solver = cp.SCS, verbose=True)
         # print(-prob.value)
         if -prob.value <= eps1:
@@ -376,11 +376,12 @@ def main_imperfect_csi(params_system,Rician_factor,noise_power_db,sigma2_input):
     plt.grid()
     plt.show()
 
+
 if __name__ == '__main__':
     ts = time.time()
     Rician_factor = 10
     sigma2_input = 1/np.sqrt(10)
-    params_system = (4, 20, 2)
+    params_system = (4, 20, 4)
     noise_power_db = -100
     maxmin_perfect_csi(params_system, Rician_factor,sigma2_input)
     main_imperfect_csi(params_system, Rician_factor, noise_power_db,sigma2_input)

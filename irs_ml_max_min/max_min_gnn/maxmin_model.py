@@ -1,8 +1,9 @@
 import tensorflow as tf
-# import keras
-# from keras.layers import Layer, Dense,BatchNormalization
+import keras
+from keras.layers import Layer, Dense,BatchNormalization
 # from tensorflow import keras
-from tensorflow.python.keras.layers import Layer, Dense,BatchNormalization
+# from tensorflow.python.keras.layers import Layer, Dense, BatchNormalization
+
 
 class MLP_input_w(Layer):
     def __init__(self):
@@ -15,6 +16,7 @@ class MLP_input_w(Layer):
         x = self.linear_2(x)
         return x
 
+
 class MLP_input_v(Layer):
     def __init__(self):
         super(MLP_input_v, self).__init__()
@@ -25,6 +27,7 @@ class MLP_input_v(Layer):
         x = self.linear_1(inputs)
         x = self.linear_2(x)
         return x
+
 
 class MLPBlock0(Layer):
     def __init__(self):
@@ -86,17 +89,16 @@ class MLPBlock4(Layer):
         return x
 
 
-
-def GNN_layer(x,v,MLP0,MLP1,MLP2,MLP3,MLP4, num_user):
+def GNN_layer(x, v, MLP0, MLP1, MLP2, MLP3, MLP4, num_user):
     v0 = MLP0(v)
-    x_out = {0:0}
+    x_out = {0: 0}
     for ii in range(num_user):
         tmp = []
         for jj in range(num_user):
             if jj != ii:
                 tmp.append(MLP1(x[jj]))
         # x_max = tf.reduce_max(tmp,axis=0)
-        x_max = tf.reduce_mean(tmp,axis=0)
+        x_max = tf.reduce_mean(tmp, axis=0)
 
         if num_user == 1:
             x_concate = tf.concat([x[ii], v0], axis=1)
@@ -107,10 +109,10 @@ def GNN_layer(x,v,MLP0,MLP1,MLP2,MLP3,MLP4, num_user):
     tmp = []
     for ii in range(num_user):
         tmp.append(MLP3(x[ii]))
-    x_max = tf.reduce_max(tmp,axis=0)
+    x_max = tf.reduce_max(tmp, axis=0)
     x_concate = tf.concat([x_max, v0], axis=1)
     v_out = MLP4(x_concate)
-    return x_out,v_out
+    return x_out, v_out
 
 
 class MaxminModel:
@@ -152,13 +154,13 @@ class MaxminModel:
         with self._graph.as_default():
             # ---input---------
             (num_antenna_bs, num_elements_irs, num_user) = self._params_system
-            self._input_y = tf.placeholder(tf.float32, shape=(None, 2 * num_antenna_bs, self._len_pilot))
-            self._input_y_ks = tf.placeholder(tf.float32,
+            self._input_y = tf.compat.v1.placeholder(tf.float32, shape=(None, 2 * num_antenna_bs, self._len_pilot))
+            self._input_y_ks = tf.compat.v1.placeholder(tf.float32,
                                               shape=(None, 2 * num_antenna_bs, num_user, self._len_pilot // num_user))
-            self._input_locations = tf.placeholder(tf.float32, shape=(None, num_user, 3))
-            self._channel_bs_irs_user = tf.placeholder(tf.float32,
+            self._input_locations = tf.compat.v1.placeholder(tf.float32, shape=(None, num_user, 3))
+            self._channel_bs_irs_user = tf.compat.v1.placeholder(tf.float32,
                                                        shape=(None, 2 * num_elements_irs, 2 * num_antenna_bs, num_user))
-            self._channel_bs_user = tf.placeholder(tf.float32, shape=(None, 2 * num_antenna_bs, num_user))
+            self._channel_bs_user = tf.compat.v1.placeholder(tf.float32, shape=(None, 2 * num_antenna_bs, num_user))
 
             # --- GNN--------
             MLP_v_in, MLP_w_in = MLP_input_v(), MLP_input_w()
@@ -222,7 +224,7 @@ class MaxminModel:
             W_norm = tf.norm(W, ord='euclidean', axis=(1, 2), keepdims=True)
             W_output = (W / W_norm) * tf.sqrt(self._Pt)
             self._output_w = W_output
-            ####### Loss Function
+            # Loss Function
             rate = []
             for k1 in range(num_user):
                 A_T_k = self._channel_bs_irs_user[:, :, :, k1]
@@ -260,20 +262,20 @@ class MaxminModel:
         with self._graph.as_default():
             # define the learning rate
             global_step = tf.Variable(0, trainable=False)
-            self._learning_rate = tf.train.exponential_decay(learning_rate, global_step, decay_step,
-                                                             decay_rate=decay_rate, staircase=True)
+            self._learning_rate = tf.compat.v1.train.exponential_decay(learning_rate, global_step, decay_step,
+                                                                       decay_rate=decay_rate, staircase=True)
             # self._learning_rate = learning_rate
             # define the appropriate optimizer to use
             if (training_algorithm == 0) or (training_algorithm == 'GD'):
-                optimizer = tf.train.GradientDescentOptimizer(learning_rate=self._learning_rate)
+                optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self._learning_rate)
             elif (training_algorithm == 1) or (training_algorithm == 'RMSProp'):
-                optimizer = tf.train.RMSPropOptimizer(learning_rate=self._learning_rate)
+                optimizer = tf.compat.v1.train.RMSPropOptimizer(learning_rate=self._learning_rate)
             elif (training_algorithm == 2) or (training_algorithm == 'Adam'):
-                optimizer = tf.train.AdamOptimizer(learning_rate=self._learning_rate)
+                optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self._learning_rate)
             elif (training_algorithm == 3) or (training_algorithm == 'AdaGrad'):
-                optimizer = tf.train.AdagradOptimizer(learning_rate=self._learning_rate)
+                optimizer = tf.compat.v1.train.AdagradOptimizer(learning_rate=self._learning_rate)
             elif (training_algorithm == 4) or (training_algorithm == 'AdaDelta'):
-                optimizer = tf.train.AdadeltaOptimizer(learning_rate=self._learning_rate)
+                optimizer = tf.compat.v1.train.AdadeltaOptimizer(learning_rate=self._learning_rate)
             else:
                 raise ValueError("Unknown training algorithm.")
 
@@ -285,9 +287,9 @@ class MaxminModel:
     def create_initializer(self):
         # initializer of the neural network
         with self._graph.as_default():
-            self._saver = tf.train.Saver()
-            self._initializer = tf.global_variables_initializer()
-        self._sess = tf.Session(graph=self._graph)
+            self._saver = tf.compat.v1.train.Saver()
+            self._initializer = tf.compat.v1.global_variables_initializer()
+        self._sess = tf.compat.v1.Session(graph=self._graph)
 
     # =========================================================================
     # initialize the computation graph

@@ -2,6 +2,7 @@ import numpy as np
 
 
 def combine_channel(channel_bs_user_k, channel_irs_user_k, channel_bs_irs, phase_shifts):
+    """ Creates cascaded channel and combined channel as mentioned in Formula (1) and (2)."""
     channel_combine_irs = channel_bs_irs @ np.diag(phase_shifts)
     channel_combine = channel_bs_user_k + channel_combine_irs @ channel_irs_user_k
     # channel_combine_irs2 = channel_bs_irs @ np.diag(channel_irs_user_k) @  phase_shifts

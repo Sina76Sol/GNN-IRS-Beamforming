@@ -1,6 +1,6 @@
 import numpy as np
-from util_func import combine_channel, random_beamforming
-from max_min_bl.generate_channel import generate_channel, channel_complex2real
+from irs_ml_max_min.util_func import combine_channel, random_beamforming
+from irs_ml_max_min.max_min_bl.generate_channel import generate_channel, channel_complex2real
 import time
 
 
@@ -43,7 +43,7 @@ def compute_rate_batch(w, theta, chs, Pt = 0, sigma2=1):
     num_elements_irs = theta.shape[1]
 
     # check constraint on w and theta
-    Pt =10**(Pt/10)
+    Pt = 10**(Pt/10)
     w_norm, w_check = np.squeeze(np.linalg.norm(w, axis=(1, 2)))**2, np.ones(num_samples)
     err_w = np.linalg.norm(w_norm/Pt - w_check)
     theta_abs, theta_check = np.squeeze(np.abs(theta)), np.ones((num_samples, num_elements_irs))
@@ -137,6 +137,7 @@ def compute_minrate_batch(w, theta, chs, sigma2=1):
     rate_min = np.min(rate_all,axis=1)
     return np.mean(rate_min), rate_all
 
+
 def test():
     num_antenna_bs, num_elements_irs, num_user = 2, 4, 3
     params_system = (num_antenna_bs, num_elements_irs, num_user)
@@ -147,7 +148,7 @@ def test():
     w_rnd, theta_rnd = random_beamforming(num_test, num_antenna_bs, num_elements_irs, num_user)
     rate_rnd = compute_rate_batch(w_rnd, theta_rnd, chs)
     # rate_rnd = compute_rate(w_rnd, theta_rnd, chs)
-    print('rate_rnd:%0.5f' % rate_rnd)
+    print('rate_rnd:%0.5f' % float(rate_rnd[0]))
 
 
 if __name__ == '__main__':

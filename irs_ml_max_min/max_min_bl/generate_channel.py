@@ -5,8 +5,8 @@ import scipy.io as sio
 def generate_location(num_users):
     location_user = np.empty([num_users, 3])
     for k in range(num_users):
-        x = np.random.uniform(5, 15)
-        y = np.random.uniform(-15, 15)
+        x = np.random.uniform(5, 35)
+        y = np.random.uniform(-35, 35)
         z = -20
         coordinate_k = np.array([x, y, z])
         location_user[k, :] = coordinate_k

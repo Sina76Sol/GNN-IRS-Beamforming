@@ -1,19 +1,22 @@
-from max_min_bl.generate_channel import generate_channel, channel_complex2real
-from max_min_bl.generate_received_pilots import generate_pilots_bl_v2,generate_pilots_bl, generate_received_pilots_batch, decorrelation
-from max_min_gnn.maxmin_model import MaxminModel
-from util_func import random_beamforming
-from compute_objective_fun import compute_minrate_batch
+from irs_ml_max_min.max_min_bl.generate_channel import generate_channel, channel_complex2real
+from irs_ml_max_min.max_min_bl.generate_received_pilots import generate_pilots_bl_v2, generate_pilots_bl
+from irs_ml_max_min.max_min_bl.generate_received_pilots import generate_received_pilots_batch, decorrelation
+from irs_ml_max_min.max_min_gnn.maxmin_model import MaxminModel
+from irs_ml_max_min.util_func import random_beamforming
+from irs_ml_max_min.compute_objective_fun import compute_minrate_batch
 import numpy as np
 import scipy.io as sio
 import os
 import time
+import tensorflow as tf
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import tensorflow as tf
-config = tf.ConfigProto()
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-session = tf.Session(config=config)
+session = tf.compat.v1.Session(config=config)
+
 
 def train_network(param_training, params_system, noise_power_db, phase_shifts, pilots, data_test, model_path,
                   location_user, Rician_factor, verbose=True):
@@ -23,7 +26,7 @@ def train_network(param_training, params_system, noise_power_db, phase_shifts, p
     (learning_rate, max_epochs, batch_size, iter_per_epoch, initial_run, save_model, input_flag) = param_training
     len_pilot = pilots.shape[0]
 
-    nn = MaxminModel(num_antenna_bs, num_elements_irs, num_user, len_pilot, input_flag, sigma2=1/np.sqrt(10))
+    nn = MaxminModel(num_antenna_bs, num_elements_irs, num_user, len_pilot, input_flag, sigma2=1 / np.sqrt(10))
     nn.create_network()
     nn.create_optimizer(training_algorithm='Adam', learning_rate=learning_rate)
     nn.create_initializer()
@@ -73,8 +76,8 @@ def train_network(param_training, params_system, noise_power_db, phase_shifts, p
     return nn, train_loss, val_loss
 
 
-def main_rate_vs_pilot(len_pilots_tmp, params_system, input_flag, Rician_factor,noise_power_db):
-    initial_run, save_model = True, True
+def main_rate_vs_pilot(len_pilots_tmp, params_system, input_flag, Rician_factor, noise_power_db):
+    initial_run, save_model = True, False
     (num_antenna_bs, num_elements_irs, num_user) = params_system
     location_user = None
     learning_rate, max_epochs, batch_size, iter_per_epoch = 1e-3, 400, 1024, 100
@@ -108,7 +111,7 @@ def main_rate_vs_pilot(len_pilots_tmp, params_system, input_flag, Rician_factor,
         y_ks = np.concatenate([y_ks_tmp.real, y_ks_tmp.imag], axis=1)
         y_mean, y_std = np.mean(y_real_tmp, axis=0), np.std(y_real_tmp, axis=0)
         y_real = (y_real_tmp - y_mean) / y_std
-        location_mean, location_std = np.mean(set_location_user, axis=0), np.std(set_location_user, axis=0)+1e-15
+        location_mean, location_std = np.mean(set_location_user, axis=0), np.std(set_location_user, axis=0) + 1e-15
         set_location_user = (set_location_user - location_mean) / location_std
         y_ks_mean, y_ks_std = np.mean(y_ks, axis=0), np.std(y_ks, axis=0)
         y_ks_real = (y_ks - y_ks_mean) / y_ks_std
@@ -118,7 +121,7 @@ def main_rate_vs_pilot(len_pilots_tmp, params_system, input_flag, Rician_factor,
                      location_mean, location_std, y_ks_mean, y_ks_std, channels)
         # ----------------------------------random beamforming----------------------------------
         w_rnd, theta_rnd = random_beamforming(num_test, num_antenna_bs, num_elements_irs, num_user)
-        rate_rnd, _ = compute_minrate_batch(w_rnd, theta_rnd, channels,sigma2=1/np.sqrt(10))
+        rate_rnd, _ = compute_minrate_batch(w_rnd, theta_rnd, channels, sigma2=1 / np.sqrt(10))
         rate_set[0].append(rate_rnd)
         print('rate_rnd:%0.3f' % rate_rnd)
 
@@ -136,7 +139,7 @@ def main_rate_vs_pilot(len_pilots_tmp, params_system, input_flag, Rician_factor,
         theta_nn_real = nn.get_theta(y_real, y_ks_real, set_location_user)
         theta_nn = theta_nn_real[:, 0:num_elements_irs] + 1j * theta_nn_real[:, num_elements_irs:2 * num_elements_irs]
 
-        rate_nn, rate_nn_all = compute_minrate_batch(w_nn, theta_nn, channels,sigma2=1/np.sqrt(10))
+        rate_nn, rate_nn_all = compute_minrate_batch(w_nn, theta_nn, channels, sigma2=1 / np.sqrt(10))
 
         nn_loss, _ = nn.get_loss(y_real, y_ks_real, set_location_user, A_T, Hd)
         print('loss %0.3f:' % nn_loss, 'rate %0.3f:' % rate_nn)
@@ -155,6 +158,5 @@ if __name__ == '__main__':
                        Rician_factor=10,
                        noise_power_db=-100
                        )
-
 
     print('Running time: %0.3f hours: ' % ((time.time() - ts) / 3600))
